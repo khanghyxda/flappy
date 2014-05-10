@@ -1,0 +1,418 @@
+<html>
+<head>
+    <script src='http://mighty-badlands-3437.herokuapp.com:3000/socket.io/socket.io.js'></script>
+    <script src='http://code.jquery.com/jquery-1.10.1.min.js'></script>
+    <!--<script src='socket_client.js'></script>-->
+    <script src="jquery.js"></script>
+    <script src="thanhtruot.js"></script>
+    <script src="ongkhoi.js"></script>
+    <script src="chim.js"></script>
+    <script src="rect.js"></script>
+    <link href="game.css" rel="stylesheet" type="text/css">
+    <meta charset="UTF-8">
+</head>
+<body>
+<div style="float:left;width:100px;height:550px;padding:5px;overflow:scroll-y;" class='room'>
+    <b>ROOMS</b>
+
+    <div id="rooms"></div>
+    <div>
+        <div id="create" style="cursor:pointer"><img src='add.png' width="35px" height="35px"/></div>
+    </div>
+</div>
+
+<div style="float:left;width:300px;height:550px;overflow:scroll-y;padding:5px;" class='conversation'>
+    <div id="conversation" style="overflow-y:scroll" >
+    </div>
+    <div>
+        <input id="data" style="width:220px;"/>
+        <input type="button" id="datasend" value="send"/>
+    </div>
+</div>
+<div id="screen" style="float:left;width:400px;height:580px;overflow:scroll-y;padding:10px">
+    <div id='player1' style="width:80px;height:50px;margin:auto"><a href="#" class="btn_normal">Player 1</a></div>
+    <div id='gamearea' style="width:100%;height:480px;margin:auto">
+        <div style="width: 300px;margin: auto;">
+            <canvas id="canvas" width="290px" height="470px" style="border:  5px  solid #3a6f80;" tabindex="1"></canvas>
+        </div>
+    </div>
+    <div id='player2' style="width:80px;height:50px;margin:auto"><a href="#" class="btn_normal">Player 2</a></div>
+</div>
+<div id='start' style="float:left;width:80px;height:25px;margin:auto;margin-top:280px;cursor:pointer;display: none">
+    <div>
+        <img src='start.png' width="50px"/>
+    </div>
+    <div style="margin-left:10px">
+        Start
+    </div>
+</div>
+</body>
+</html>
+<script>
+    var socket = io.connect('http://mighty-badlands-3437.herokuapp.com:8000');
+    socket.on("error_connect_room",function(){
+        alert("Room đã đủ người");
+    })
+    socket.on("updaterooms_server",function(){
+        socket.emit("updaterooms_server");
+    })
+    socket.on('greeting', function (data) {
+        alert(data);
+    })
+    socket.on('connect', function () {
+        socket.emit('adduser');
+    });
+    socket.on('updatechat', function (username, data) {
+        $('#conversation').append('<b>' + username + ':</b> ' + data + '<br>');
+    });
+    socket.on("test",function(){
+        socket.emit("haivl");
+    })
+    socket.on('updaterooms', function (rooms, current_room) {
+        $('#rooms').empty();
+        $.each(rooms, function (key, value) {
+            if (value == current_room) {
+                $('#rooms').append('<div>' + value + '</div>');
+            }
+            else {
+                $('#rooms').append('<div><a href="#" onclick="switchRoom(\'' + value + '\')">' + value + '</a></div>');
+            }
+        });
+    });
+    socket.on("updateUI", function (rooms, current_room) {
+        $('#rooms').empty();
+        $.each(rooms, function (key, value) {
+            $('#rooms').append('<div><a href="#" onclick="switchRoom(\'' + value + '\')">' + value + '</a></div>');
+        });
+    });
+    socket.on("player1click", function (a, b ,c) {
+        console.log("danhan");
+        update_click(a, b, c);
+    })
+    socket.on("updateplayer",function(player1,player2){
+        if(player1==1){
+            $('#player1 a').addClass('btn_player1');
+            $('#player1 a').removeClass('btn_normal');
+        }
+        if(player2==1){
+            $('#player2 a').addClass('btn_player1');
+            $('#player2 a').removeClass('btn_normal');
+        }
+        if(player1==0){
+            $('#player1 a').addClass('btn_normal');
+            $('#player1 a').removeClass('btn_player1');
+        }
+        if(player2==0){
+            $('#player2 a').addClass('btn_normal');
+            $('#player2 a').removeClass('btn_player1');
+        }
+    });
+    socket.on("removeRoom", function (name) {
+        alert(name);
+    });
+    var setInt = 0;
+    var arrayOngKhoi = [];
+    socket.on('startgame', function (arr) {
+        arrayOngKhoi = arr;
+        //console.log(arrayOngKhoi);
+        ongkhoi1 = new OngKhoi(context, arr, 1);
+        ongkhoi2 = new OngKhoi(context, arr, 2);
+        ongkhoi3 = new OngKhoi(context, arr, 3);
+        startgame();
+        setInterval(game_loop, 1000 / 60);
+    })
+    socket.on("restart", function () {
+        restart();
+    })
+    socket.on("player1", function () {
+        $('#player1 a').addClass('btn_player1');
+        $('#player1 a').removeClass('btn_normal');
+    })
+    socket.on("player2", function () {
+        $('#player2 a').addClass('btn_player1');
+        $('#player2 a').removeClass('btn_normal');
+    })
+    socket.on("display_start",function(){
+        $('#start').css("display","block");
+    })
+    function switchRoom(room) {
+        socket.emit('switchRoom', room);
+        clearInterval(game_loop);
+    }
+    function playerclick(pageX, pageY) {
+        socket.emit("playerclick", pageX, pageY);
+    }
+    $(function () {
+        $('#player1').click(function () {
+            if($('#player1 a').hasClass('btn_normal')){
+            socket.emit("player1");
+            player = 1;
+                if($('#player2 a').hasClass('btn_player1')){
+                    socket.emit("display_start");
+                }
+            }
+        })
+        $('#player2').click(function () {
+            if($('#player2 a').hasClass('btn_normal')){
+            socket.emit("player2");
+            player = 2;
+                if($('#player1 a').hasClass('btn_player1')){
+                    socket.emit("display_start");
+                }
+            }
+        })
+        $('#start').click(function () {
+            socket.emit("startgame");
+        })
+        $('#canvas').mousedown(function (e) {
+            //update_click(e);
+            console.log('1');
+            playerclick(e.pageX, e.pageY);
+        });
+
+        $('#datasend').click(function () {
+            var message = $('#data').val();
+            $('#data').val('');
+            socket.emit('sendchat', message);
+        });
+        $('#create').click(function () {
+            var name = prompt("Insert name of your room: ");
+            if (name != '') {
+                $('#rooms').append('<div><a href="#" id="rvl_' + name + '" onclick="switchRoom(\'' + name + '\')">' + name + '</a></div>');
+                socket.emit('create', name);
+            }
+            else {
+                alert("Vui lòng nhập vào tên room");
+            }
+        });
+
+        $('#data').keypress(function (e) {
+            if (e.which == 13) {
+                $(this).blur();
+                $('#datasend').focus().click();
+            }
+        });
+    });
+
+</script>
+<script>
+    var sound = new Audio();
+    var soundpass = new Audio();
+    var sounddie = new Audio();
+    var canvas;
+    var context;
+    var thanhtruot1, thanhtruot2;
+    var ongkhoi;
+    var chim;
+    var xuong = 0;
+    var flag1 = "song";
+    var diem = 0;
+    var start1;
+    var start2;
+    var begin;
+    var bgdie;
+    var hight = 0;
+    var rerun;
+    var player = 0;
+    var stop_emit1=0;
+    var stop_emit2=0;
+    ($)(function () {
+        canvas = document.getElementById("canvas");
+        sound.src = "click.mp3";
+        soundpass.src = "pass.wav";
+        sounddie.src = "die.wav";
+        context = canvas.getContext("2d");
+        bgdie = new RectBG(context);
+        rerun = new RectRerun(context);
+        thanhtruot1 = new ThanhTruot(context);
+        thanhtruot2 = new ThanhTruot(context);
+        chim = new Chim(context, 'chim.png', 0);
+        chim2 = new Chim(context, 'chim.png', 50);
+
+        context.clearRect(0, 0, 290, 470);
+        context.beginPath();
+        context.fillStyle = "rgb(221,216,148)";
+        context.rect(0, 405, 290, 65);
+        context.fill();
+        var varCounter = 0;
+    });
+    var game_loop = function () {
+        update(context);
+    }
+    function update_click(pageX, pageY , user) {
+        console.log(user);
+        if(user==1){
+        if (chim.move != "DIE") {
+            if (chim.move == "MOVE_DOWN") {
+                chim.setMove("MOVE_UP");
+                chim.setMoveAngle("UP");
+                sound.play();
+            }
+            start1 = 0;
+        }
+        }
+        if(user==2){
+        if (chim2.move != "DIE") {
+            if (chim2.move == "MOVE_DOWN") {
+                chim2.setMove("MOVE_UP");
+                chim2.setMoveAngle("UP");
+                sound.play();
+            }
+            start2 = 0;
+        }
+        }
+        if (flag1 == "chet") {
+            var x = pageX - canvas.offsetLeft;
+            var y = pageY - canvas.offsetTop;
+
+            if (rerun.checkCollision(x, y)) {
+                //restart();
+                socket.emit("restart");
+            }
+        }
+    }
+    function restart() {
+        clearInterval(game_loop);
+        flag1 = "song";
+        flag2 = "song";
+        chim.speed = 0;
+        chim2.speed = 0;
+        begin = 0;
+        thanhtruot1 = new ThanhTruot(context);
+        thanhtruot2 = new ThanhTruot(context);
+        chim = new Chim(context, 'chim.png', 0);
+        chim2 = new Chim(context, 'chim.png', 50);
+        ongkhoi1 = new OngKhoi(context, arrayOngKhoi, 1);
+        ongkhoi2 = new OngKhoi(context, arrayOngKhoi, 2);
+        ongkhoi3 = new OngKhoi(context, arrayOngKhoi, 3);
+        ongkhoi1.addNew(700);
+        ongkhoi2.addNew(ongkhoi1.x + 175);
+        ongkhoi3.addNew(ongkhoi2.x + 175);
+        thanhtruot2.x = 290;
+        thanhtruot1.x = 0;
+        diem = 0;
+        bgdie = new RectBG();
+        rerun = new RectRerun();
+    }
+    function update(context) {
+        if (diem > hight) {
+            hight = diem;
+        }
+        if (flag1 == 'song' || flag2=="song") {
+            context.clearRect(0, 0, 290, 470);
+            context.beginPath();
+            context.fillStyle = "rgb(221,216,148)";
+            context.rect(0, 405, 290, 65);
+            context.fill();
+            thanhtruot1.update(context);
+            thanhtruot2.update(context);
+            ongkhoi1.update(context);
+            ongkhoi2.update(context);
+            ongkhoi3.update(context);
+            if(flag1 == 'song')
+            chim.update(context);
+            if(flag2 == 'song')
+            chim2.update(context);
+            start1++;
+            start2++;
+            checkChim(start1, chim,1);
+            checkChim(start2, chim2,2);
+            context.font = "60px Arial";
+            context.fillStyle = "#e2e2e2";
+            context.fillText(diem, 130, 50, 100);
+        }
+        else {
+            //
+            context.clearRect(0, 0, 290, 470);
+            context.beginPath();
+            context.fillStyle = "rgb(221,216,148)";
+            context.rect(0, 405, 290, 65);
+            context.fill();
+            ongkhoi1.speed = 0;
+            ongkhoi2.speed = 0;
+            ongkhoi3.speed = 0;
+            thanhtruot1.speed = 0;
+            thanhtruot2.speed = 0;
+            thanhtruot1.update(context);
+            thanhtruot2.update(context);
+            ongkhoi1.update(context);
+            ongkhoi2.update(context);
+            ongkhoi3.update(context);
+            chim.move = "DIE";
+            chim2.move = "DIE";
+            chim.update(context);
+            chim2.update(context);
+            context.font = "100px Arial";
+            context.fillStyle = "#ff0000";
+            context.fillText("Game Over", 100, 150, 100);
+            bgdie.update(context, diem, hight);
+            rerun.update(context);
+            //clearInterval(game_loop());
+        }
+    }
+    function checkChim(start, chim ,play) {
+        if (start > 13) {
+            setmove(chim);
+        }
+        if (start > 17) {
+            setmovedown(chim);
+        }
+        if (chim.checkCollision(ongkhoi1) ||
+                chim.checkCollision(ongkhoi2) ||
+                chim.checkCollision(ongkhoi3)) {
+            if(play==1 && player==1)
+            flag1 = 'chet';
+            if(play==2 && player==2)
+            flag2 = 'chet';
+            if(flag1=="chet" && flag2=="chet")
+            sounddie.play();
+        }
+        if (chim.y >= 370) {
+            console.log(play+"---"+player);
+            if(play==1)
+                flag1 = 'chet';
+            if(play==2)
+                flag2 = 'chet';
+            if(flag1=="chet" && flag2=="chet")
+            sounddie.play();
+        }
+        if (chim.y <= 0) {
+            chim.y = 0;
+        }
+        if (chim.x > ongkhoi1.x + 56 && chim.x < ongkhoi1.x + 59) {
+            diem++;
+            soundpass.play();
+        }
+        if (chim.x > ongkhoi2.x + 56 && chim.x < ongkhoi2.x + 59) {
+            diem++;
+            soundpass.play();
+        }
+        if (chim.x > ongkhoi3.x + 56 && chim.x < ongkhoi3.x + 59) {
+            diem++;
+            soundpass.play();
+        }
+    }
+    function setxuong() {
+        xuong = 0;
+    }
+    function setmove(chim) {
+        if (chim.move == "MOVE_UP") {
+            chim.setMove('MOVE_DOWN');
+        }
+
+    }
+    function setmovedown(chim) {
+        chim.setMoveAngle("DOWN");
+    }
+    function startgame(context) {
+        flag1 = "song";
+        flag2 = "song"
+        chim.speed = 0;
+        chim2.speed = 0;
+        ongkhoi1.addNew(700);
+        ongkhoi2.addNew(ongkhoi1.x + 175);
+        ongkhoi3.addNew(ongkhoi2.x + 175);
+        thanhtruot2.x = 290;
+        thanhtruot1.x = 0;
+    }
+</script>

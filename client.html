@@ -1,0 +1,88 @@
+<!doctype html>
+<style>
+.left{
+	text-align:left;
+	color:red;
+	background:#e2e2e2;
+	width:auto;
+	margin-bottom:2px;
+}
+.right{
+text-align:right;
+color:blue;
+background:#e2e2e2;
+width:auto;
+margin-bottom:2px;
+}
+.chat{
+display:none;
+}
+</style>
+<html>
+    <head>
+        <script src='http://127.0.0.1:8000/socket.io/socket.io.js'></script>
+	<script src='http://code.jquery.com/jquery-1.10.1.min.js'></script>
+        <!--<script src='socket_client.js'></script>-->
+    </head>
+
+
+	<body>
+        <div>
+            <p>Chat online nao</p>
+			<div id="chatarea" style="width:300px;height:400px;border:solid 1px;overflow-y: scroll;">
+			</div>
+			<div class='chat'>
+			<img src='http://transviet.com.vn/libs/layouts/default/images/loading.gif'/>
+			</div>
+            <input type='text' id='name' value='Anynomous' />
+            <button id='go'>Send</button>
+        </div>
+    <body>
+<script>
+$(document).ready(function(){
+	
+    var socket = io.connect('http://127.0.0.1:8000');
+    socket.on('greeting', function(data){
+          alert(data);
+    })
+	$('#go').click(function(){
+          socket.emit('user-join',$('#name').val());
+		  var b=$('#name').val();
+		  var a=$('div #chatarea').html();
+		  $('div #chatarea').html(a+"<div class='right'>Me : "+b+"</div>");
+		  $( "div #chatarea" ).scrollTop( 300000 );
+    });
+	$("#name").focus(function(){ 
+		var user = "KhangHy";
+            socket.emit('user-insert',user);
+			//alert(user);
+        });
+	$("#name").focusout(function(){ 
+		var user = "Sakura";
+            socket.emit('user-out',user);		
+        });
+	socket.on('new-user', function(data){
+	var a=$('div #chatarea').html();
+    $('div #chatarea').html(a+"<div class='left'><?php echo $user;?> :"+data+"</div>");
+	$( "div #chatarea" ).scrollTop( 300000 );
+	});
+	socket.on('user-insert', function(data){
+	$('div .chat').css('display',"block");
+	});
+	socket.on('user-out', function(data){
+	$('div .chat').css('display','none');
+	});
+});
+</script>
+
+<script>
+function redirect()
+{
+var b=$('#name').val();
+window.location.assign("/websocket/index.php?user="+b);
+}
+</script>
+<?php }?>
+</html>
+
+

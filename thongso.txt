@@ -1,0 +1,7 @@
+doc 470
+ngang 290
+nen hien thi chim cot 395
+khoang cach giua 2 cot : 108
+ong khoi 22
+chim cach trai 70
+chan ong khoi rong 50 tren 56 	

@@ -1,0 +1,213 @@
+<HTML>
+<head>
+    <script src="jquery.js"></script>
+    <script src="thanhtruot.js"></script>
+    <script src="ongkhoi.js"></script>
+    <script src="chim.js"></script>
+    <script src="rect.js"></script>
+    <script>
+        var sound = new Audio();
+        var soundpass = new Audio();
+        var sounddie = new Audio();
+        var canvas;
+        var context;
+        var thanhtruot1,thanhtruot2;
+        var ongkhoi;
+        var chim;
+        var xuong=0;
+        var flag = "song";
+        var diem = 0;
+        var start;
+        var begin;
+        var bgdie;
+        var hight=0;
+        var rerun;
+    ($)(function(){
+        canvas = document.getElementById("canvas");
+        sound.src = "click.mp3";
+        soundpass.src = "pass.wav";
+        sounddie.src = "die.wav";
+        context = canvas.getContext("2d");
+        bgdie = new RectBG(context);
+        rerun = new RectRerun(context);
+        thanhtruot1 = new ThanhTruot(context);
+        thanhtruot2 = new ThanhTruot(context);
+        chim = new Chim(context,'chim.png',0);
+		chim2 = new Chim(context,'chim.png',50);
+        ongkhoi1 = new OngKhoi(context);
+        ongkhoi2 = new OngKhoi(context);
+        ongkhoi3 = new OngKhoi(context);
+        startgame();
+        $('#canvas').mousedown(function(e){
+            if(chim.move!="DIE"){
+            if(chim.move=="MOVE_DOWN"){
+                chim.setMove("MOVE_UP");
+                chim.setMoveAngle("UP");
+                sound.play();
+            }
+             start = 0;
+            }
+			if(chim2.move!="DIE"){
+            if(chim2.move=="MOVE_DOWN"){
+                chim2.setMove("MOVE_UP");
+                chim2.setMoveAngle("UP");
+                sound.play();
+            }
+             start = 0;
+            }
+            if(flag=="chet"){
+                var x = e.pageX - canvas.offsetLeft;
+                var y = e.pageY - canvas.offsetTop;
+				clearInterval(game_loop);
+                if(rerun.checkCollision(x,y)){
+                    restart();
+					varCounter=0;
+                }
+            }
+        });
+        //canvas.onkeydown = canvas_keydown;
+
+		var game_loop = function(){update(context);}
+
+			setInterval(game_loop,1000/60);
+
+    });
+	 
+    function restart(){
+            flag="song";
+            chim.speed=0;
+            begin = 0;
+            thanhtruot1 = new ThanhTruot(context);
+            thanhtruot2 = new ThanhTruot(context);
+            chim = new Chim(context,'chim.png',0);
+			chim2 = new Chim(context,'chim.png',50);
+            ongkhoi1 = new OngKhoi(context);
+            ongkhoi2 = new OngKhoi(context);
+            ongkhoi3 = new OngKhoi(context);
+            ongkhoi1.addNew(700);
+            ongkhoi2.addNew(ongkhoi1.x + 175);
+            ongkhoi3.addNew(ongkhoi2.x + 175);
+            thanhtruot2.x = 290;
+            thanhtruot1.x = 0;
+            diem = 0;
+        bgdie = new RectBG();
+        rerun = new RectRerun();
+    }
+    function update(context){
+        if(diem>hight){
+            hight = diem;
+        }
+        //console.log(chim);
+        if(flag=='song'){
+        context.clearRect(0,0,290,470);
+        context.beginPath();
+        context.fillStyle = "rgb(221,216,148)";
+        context.rect(0,405,290,65);
+        context.fill();
+        thanhtruot1.update(context);
+        thanhtruot2.update(context);
+        ongkhoi1.update(context);
+        ongkhoi2.update(context);
+        ongkhoi3.update(context);
+        chim.update(context);
+		chim2.update(context);
+        start ++;
+            checkChim(start,chim);
+			checkChim(start,chim2);
+        context.font = "60px Arial";
+        context.fillStyle = "#e2e2e2";
+        context.fillText(diem,130,50,100);
+        }
+        else{
+            //
+            context.clearRect(0,0,290,470);
+            context.beginPath();
+            context.fillStyle = "rgb(221,216,148)";
+            context.rect(0,405,290,65);
+            context.fill();
+            ongkhoi1.speed = 0;
+            ongkhoi2.speed = 0;
+            ongkhoi3.speed = 0;
+            thanhtruot1.speed=0;
+            thanhtruot2.speed=0;
+            thanhtruot1.update(context);
+            thanhtruot2.update(context);
+            ongkhoi1.update(context);
+            ongkhoi2.update(context);
+            ongkhoi3.update(context);
+            chim.move = "DIE";
+			chim2.move = "DIE";
+            chim.update(context);
+			chim2.update(context);
+            context.font = "100px Arial";
+            context.fillStyle = "#ff0000";
+            context.fillText("Game Over",100,150,100);
+            bgdie.update(context,diem,hight);
+            rerun.update(context);
+            //clearInterval(update);
+        }
+    }
+	function checkChim(start,chim){
+		if(start>13){
+                setmove(chim);
+            }
+            if(start>17){
+                setmovedown(chim);
+            }
+            if(chim.checkCollision(ongkhoi1) ||
+                    chim.checkCollision(ongkhoi2) ||
+                    chim.checkCollision(ongkhoi3))
+            {
+                flag = 'chet';
+                sounddie.play();
+            }
+        if(chim.y>=370){
+            flag = "chet";
+            sounddie.play();
+        }
+		if(chim.y<=0){
+            chim.y=0;
+        }
+        if(chim.x > ongkhoi1.x+56 && chim.x < ongkhoi1.x+59){
+            diem++;
+            soundpass.play();
+        }
+        if(chim.x > ongkhoi2.x+56 && chim.x < ongkhoi2.x+59){
+            diem++;
+            soundpass.play();
+        }
+        if(chim.x > ongkhoi3.x+56 && chim.x < ongkhoi3.x+59){
+            diem++;
+            soundpass.play();
+        }
+	}
+     function setxuong(){
+         xuong = 0;
+     }
+     function setmove(chim){
+         if(chim.move == "MOVE_UP"){
+             chim.setMove('MOVE_DOWN');
+         }
+
+     }
+     function setmovedown(chim){
+            chim.setMoveAngle("DOWN");
+        }
+     function startgame(context){
+         flag="song";
+         chim.speed=0;
+		 chim2.speed=0;
+         ongkhoi1.addNew(700);
+         ongkhoi2.addNew(ongkhoi1.x + 175);
+         ongkhoi3.addNew(ongkhoi2.x + 175);
+         thanhtruot2.x = 290;
+         thanhtruot1.x = 0;
+     }
+    </script>
+</head>
+<body>
+<div style="width: 300px;margin: auto;">
+<canvas  id="canvas"  width="290px"  height="470px"  style="border:  5px  solid #3a6f80;" tabindex="1"></canvas>
+</div>
+</body>
+</HTML>
