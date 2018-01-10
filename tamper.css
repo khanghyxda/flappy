@@ -1,3 +1,6 @@
 img {
   display: none;
 }
+.timelineMessage__userName {
+  color: #eee; 
+}
