@@ -4,3 +4,10 @@ img {
 .timelineMessage__userName {
   color: #e2e2e2 !important; 
 }
+.header {
+  display: none;
+}
+
+#_subContent {
+  display: none;
+}
